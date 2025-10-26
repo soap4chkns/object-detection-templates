@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.2
+    hooks:
+      - id: ruff-check  # Linter
+        args: [ --fix ] # Optional: Automatically fix linting issues
+      - id: ruff-format # Formatter
+      - id: isort
+
