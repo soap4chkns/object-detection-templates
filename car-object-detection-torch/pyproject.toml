@@ -10,14 +10,19 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "kaggle>=1.7.4.5",
+    "numpy>=2.3.4",
+    "pandas>=2.3.3",
+    "pillow>=12.0.0",
+    "scikit-learn>=1.7.2",
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
 ]
 
 [project.scripts]
-car-object-detection = "src.main:run"
+car-object-detection = "car_object_detection_torch.main:run"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["src*"]
+[tool.setuptools]
+packages = ["car_object_detection_torch"]
 
 [dependency-groups]
 dev = [
@@ -25,4 +30,3 @@ dev = [
     "pre-commit>=4.3.0",
     "ruff>=0.14.2",
 ]
-

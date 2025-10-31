@@ -1,9 +1,9 @@
 SHELL := /bin/bash
 UV := uv run
 
-CWD := $(shell pwd)
-SCRIPTS := $(CWD)/scripts
-DATA := $(CWD)/data
+PROJECT_DIR := $(shell pwd)
+SCRIPTS := $(PROJECT_DIR)/scripts
+DATA := $(PROJECT_DIR)/data
 
 .PHONY: download-data
 download-data:
@@ -18,10 +18,17 @@ build-project:
 .PHONY: run-train
 run-train:
 	@echo "training car object detection model"
-	$(UV) car-object-detection
+	$(UV) car-object-detection train \
+		--manifest-input-path "$(DATA)/train_solution_bounding_boxes (1).csv" \
+		--img-input-path $(DATA)/training_images \
+		--wandb-secret 1234pass
 
-train: download-data build-project run-train
+train-dev: download-data build-project run-train
 
 clean:
+	@echo "cleaning up build"
+	rm -rf $(PROJECT_DIR)/*.egg-info
+	rm -rf $(PROJECT_DIR)/dist
+
 	@echo "cleaning up data directory"
 	rm -rf $(DATA)
