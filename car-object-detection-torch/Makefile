@@ -8,7 +8,7 @@ DATA := $(PROJECT_DIR)/data
 .PHONY: download-data
 download-data:
 	@echo "attempting to download kaggle dataset ..."
-	$(UV) $(SCRIPTS)/download_data.sh
+	$(UV) python $(SCRIPTS)/download_data.py
 
 .PHONY: build-project
 build-project:
