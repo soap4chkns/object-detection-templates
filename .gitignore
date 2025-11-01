@@ -2,3 +2,4 @@ dist/
 data/
 *egg-info/
 __pycache__/
+wandb/

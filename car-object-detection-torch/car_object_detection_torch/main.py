@@ -5,10 +5,12 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import wandb
 from pandas import DataFrame, read_csv
 from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader
 
+from car_object_detection_torch import secrets
 from car_object_detection_torch.dataset import CarDetectionDataset, collate_fn
 from car_object_detection_torch.logging_config import get_logger, setup_logging
 from car_object_detection_torch.model import CarObjectDetectionModel, get_optimizer
@@ -16,16 +18,29 @@ from car_object_detection_torch.train import Trainer
 
 
 def get_config() -> Namespace:
+    global_parser = ArgumentParser(add_help=False)
+    global_parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
+        help="Set the logging level",
+    )
+    global_parser.add_argument(
+        "--test-run", action="store_true", help="test run without wandb communication"
+    )
+
     parser = ArgumentParser(
         prog="car-object-detection", description="Car object detection CLI"
     )
-
     # Global arguments for logging
     parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
         default="INFO",
         help="Set the logging level",
+    )
+    parser.add_argument(
+        "--test-run", action="store_true", help="test run without wandb communication"
     )
 
     # Create subparsers for different commands
@@ -34,7 +49,9 @@ def get_config() -> Namespace:
     )
 
     # Train subcommand
-    train_parser = subparsers.add_parser("train", help="Train the model")
+    train_parser = subparsers.add_parser(
+        "train", help="Train the model", parents=[global_parser]
+    )
     train_parser.add_argument(
         "--seed", type=int, default=4, help="seed for reproduceability"
     )
@@ -63,19 +80,31 @@ def get_config() -> Namespace:
         help="validation size when splitting training",
     )
     train_parser.add_argument(
+        "--patience",
+        type=int,
+        default=8,
+        help="number of times to tolerate poorer performance than prior",
+    )
+    train_parser.add_argument(
         "--batch-size", type=int, default=4, help="Batch size for training"
     )
     train_parser.add_argument(
         "--learning-rate", type=float, default=0.005, help="Learning rate"
     )
     train_parser.add_argument(
+        "--momentum", type=float, default=0.9, help="optimizer momentum"
+    )
+    train_parser.add_argument(
+        "--weight-decay", type=float, default=0.0005, help="optimizer weight decay"
+    )
+    train_parser.add_argument(
         "--manifest-input-path",
-        type=str,
+        type=Path,
         required=True,
         help="metadata surrounding each image",
     )
     train_parser.add_argument(
-        "--img-input-path", type=str, required=True, help="Path to training data"
+        "--img-input-path", type=Path, required=True, help="Path to training data"
     )
     train_parser.add_argument(
         "--device",
@@ -84,10 +113,10 @@ def get_config() -> Namespace:
         help="whether to use cpu or cuda",
     )
     train_parser.add_argument(
-        "--wandb-secret",
-        type=str,
+        "--model-output-path",
+        type=Path,
         required=True,
-        help="wandb secret in order to log model output",
+        help="where to save output model",
     )
 
     config = parser.parse_args()
@@ -161,6 +190,25 @@ def run() -> None:
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
+    # setup wandb for model logging
+    if config.test_run:
+        os.environ["WANDB_MODE"] = "offline"
+        wandb_api_key = secrets.secrets_factory["local"].get_secret()
+    else:
+        wandb_api_key = secrets.secrets_factory["google_colab"].get_secret()
+    wandb.login(key=wandb_api_key)
+    wandb_config = {
+        "learning_rate": config.learning_rate,
+        "momentum": config.momentum,
+        "weight_decay": config.weight_decay,
+        "epochs": config.n_epochs,
+        "validation-size": config.val_size,
+        "batch-size": config.batch_size,
+        "img-dims": (config.img_dims_width, config.img_dims_height),
+        "patience": config.patience,
+        "seed": config.seed,
+    }
+
     logger.info("Starting car object detection application")
     logger.info(f"Command: {config.command}")
     logger.debug(f"Full config: {config}")
@@ -196,7 +244,9 @@ def run() -> None:
             # step 3: create model and optimizer for bounding box
             logger.info("setting up pre-loaded model")
             model = CarObjectDetectionModel(2, config.device)
-            optimizer = get_optimizer(model, config.learning_rate)
+            optimizer = get_optimizer(
+                model, config.learning_rate, config.momentum, config.weight_decay
+            )
 
             # step 4: model training loop
             trainer = Trainer(
@@ -204,6 +254,9 @@ def run() -> None:
                 val_loader,
                 model,
                 optimizer,
+                wandb_config,
+                config.model_output_path,
+                config.test_run,
             )
             trainer.train(config.n_epochs, config.device)
             logger.info("Training completed successfully")

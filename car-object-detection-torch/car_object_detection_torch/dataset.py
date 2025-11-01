@@ -42,7 +42,7 @@ class CarDetectionDataset(Dataset):
         boxes.loc[:, ["xmin", "ymin", "xmax", "ymax"]] /= [w, h, w, h]
 
         # normalize the value of the images from 0 to 1
-        img = np.array(img.resize(self.img_dims, resample=Image.BILINEAR)) / 255.0
+        img = np.array(img.resize(self.img_dims, resample=Image.BILINEAR)) / 255.0  # type: ignore
         labels = torch.ones(len(boxes)).long()
         boxes = boxes[["xmin", "ymin", "xmax", "ymax"]].values
 

@@ -20,18 +20,19 @@ class CarObjectDetectionModel(Module):
         model.roi_heads.box_predictor = FastRCNNPredictor(in_features, self.n_classes)
         self.model = model.to(self.device)
 
-    def forward(self, input_pack: Tensor) -> int:
-        inputs, targets = input_pack
+    def forward(
+        self, inputs: list[Tensor], targets: list[dict[str, Tensor]]
+    ) -> tuple[int, Tensor]:
         losses = self.model(inputs, targets)
         loss = sum(loss for loss in losses.values())
-        return loss
+        return loss, losses
 
 
 def get_optimizer(
     model: Module,
     learning_rate: float,
-    momentum: float = 0.9,
-    weight_decay: float = 0.0005,
+    momentum: float,
+    weight_decay: float,
 ):
     optimizer = SGD(
         model.parameters(),
