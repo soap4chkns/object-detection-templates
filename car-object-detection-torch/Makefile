@@ -26,6 +26,17 @@ run-train:
 
 train-dev: download-data build-project run-train
 
+.PHONY: run
+run:
+	@echo "production car object detection training"
+	$(UV) car-object-detection train \
+		--manifest-input-path "$(DATA)/train_solution_bounding_boxes (1).csv" \
+		--img-input-path $(DATA)/training_images \
+		--model-output-path $(PROJECT_DIR)/models/faster_rcnn_$(shell date +"%Y_%m_%d_%H_%m").pth \
+		--device cuda
+
+train: download-data build-project run
+
 clean:
 	@echo "cleaning up build"
 	rm -rf $(PROJECT_DIR)/*.egg-info
