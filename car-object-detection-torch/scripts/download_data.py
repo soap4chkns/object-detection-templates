@@ -15,11 +15,9 @@ if not os.path.exists(SECRET_PATH):
     os.makedirs(kaggle_dir, exist_ok=True)
 
     try:
-        from google.colab import userdata  # type: ignore
-
         # manually create the kaggle.json file
-        username = userdata.get("KAGGLE_USERNAME")
-        key = userdata.get("KAGGLE_API_KEY")
+        username = userdata.get("KAGGLE_USERNAME")  # pyright: ignore[reportUndefinedVariable] # noqa: F821
+        key = userdata.get("KAGGLE_API_KEY")  # pyright: ignore[reportUndefinedVariable] # noqa: F821
         kaggle_creds = {"username": username, "key": key}
 
         with open(SECRET_PATH, "w") as fh:
