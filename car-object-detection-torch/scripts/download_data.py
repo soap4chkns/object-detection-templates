@@ -11,7 +11,7 @@ OUTPUT_PATH = "./data"
 
 if not os.path.exists(SECRET_PATH):
     try:
-        from google.colab import userdata
+        from google.colab import userdata  # type: ignore
 
         os.environ["KAGGLE_USERNAME"] = userdata.get("KAGGLE_USERNAME")
         os.environ["KAGGLE_KEY"] = userdata.get("KAGGLE_API_KEY")
