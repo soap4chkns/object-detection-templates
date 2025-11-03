@@ -2,18 +2,16 @@ import json
 import os
 import sys
 
-import kaggle
-
 OWNER_NAME = "sshikamaru"
 DATASET_NAME = "car-object-detection"
 
-SECRET_PATH = os.path.join(os.path.expanduser("~"), ".kaggle/kaggle.json")
+SECRET_PATH = os.path.join(os.path.expanduser("~"), ".config", "kaggle", "kaggle.json")
 OUTPUT_PATH = "./data"
 
 if not os.path.exists(SECRET_PATH):
     # the kaggle api requires the ~/.kaggle/kaggle.json file exist
     # even if credentials are sourced from environment variables
-    kaggle_dir = os.path.join(os.path.expanduser("~"), ".kaggle")
+    kaggle_dir = os.path.join(os.path.expanduser("~"), ".config", "kaggle")
     os.makedirs(kaggle_dir, exist_ok=True)
 
     try:
@@ -35,6 +33,9 @@ if not os.path.exists(SECRET_PATH):
 if os.path.exists(OUTPUT_PATH):
     print("Warning: dataset already exists. skipping download")
     sys.exit(-1)
+
+# cannot import kaggle without the presence of ~/.kaggle first
+import kaggle  # noqa: E402
 
 kaggle.api.authenticate()
 kaggle.api.dataset_download_files(
